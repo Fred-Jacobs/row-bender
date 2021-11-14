@@ -1,0 +1,1 @@
+. ./.build/PublishPages.ps1
