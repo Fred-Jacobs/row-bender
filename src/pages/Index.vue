@@ -1,5 +1,5 @@
 <template>
-  <q-page class="justify-evenly">
+  <q-page class="justify-evenly" @dragover.prevent>
     <q-splitter v-model="horizontalSplitterModel" style="width: 100%; max-height:100%; height: calc(100vh - 50px);" horizontal before-class="overflow-hidden" after-class="overflow-hidden" >
       <template v-slot:before>
         <q-splitter v-model="topSplitterModel" style="width: 100%">
@@ -9,28 +9,32 @@
               <q-toolbar-title shrink>Json</q-toolbar-title>
               <q-space />
             </q-toolbar>
-            <MonacoEditor
-              :height="topHeight"
-              :value="jsonRef"
-              :theme="vsTheme"
-              language="json"
-              :options="jsonEditorOptions"
-              @change="onJsonEditorChange"
-            ></MonacoEditor>
+            <file-drop :fileDrop="onJsonEditorChange" >
+              <MonacoEditor
+                :height="topHeight"
+                :value="jsonRef"
+                :theme="vsTheme"
+                language="json"
+                :options="jsonEditorOptions"
+                @change="onJsonEditorChange"
+              ></MonacoEditor>
+            </file-drop>
           </template>
           <template v-slot:after>
             <q-toolbar class="bg-primary text-white shadow-2">
               <q-space />
               <q-toolbar-title shrink>Template</q-toolbar-title>
             </q-toolbar>
-            <MonacoEditor
-              :height="topHeight"
-              :value="templateRef"
-              :theme="vsTheme"
-              language="handlebars"
-              :options="templateEditorOptions"
-              @change="onTemplateEditorChange"
-            ></MonacoEditor>
+            <file-drop :fileDrop="onTemplateEditorChange" >
+              <MonacoEditor
+                :height="topHeight"
+                :value="templateRef"
+                :theme="vsTheme"
+                language="handlebars"
+                :options="templateEditorOptions"
+                @change="onTemplateEditorChange"
+              ></MonacoEditor>
+            </file-drop>
           </template>
         </q-splitter>
       </template>
@@ -50,14 +54,16 @@
                 color="secondary"
               />
             </q-toolbar>
-            <MonacoEditor
-              :height="bottomHeight"
-              :value="csvDataRef"
-              :theme="vsTheme"
-              language="none"
-              :options="csvEditorOptions"
-              @change="onCsvEditorChange"
-            ></MonacoEditor>
+            <file-drop :fileDrop="onCsvEditorChange" >
+              <MonacoEditor
+                :height="bottomHeight"
+                :value="csvDataRef"
+                :theme="vsTheme"
+                language="none"
+                :options="csvEditorOptions"
+                @change="onCsvEditorChange"
+              ></MonacoEditor>
+            </file-drop>
           </template>
           <template v-slot:after>
             <q-toolbar class="bg-primary text-white shadow-2" style="padding-left: 0;">
@@ -84,6 +90,7 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import MonacoEditor from 'components/MonacoEditor.vue';
+import FileDrop from 'components/FileDrop.vue'
 import { Size } from 'components/models'
 import { useQuasar, copyToClipboard, QVueGlobals } from 'quasar'
 import { RenderingService } from 'components/rendering-service'
@@ -125,19 +132,19 @@ let $q : QVueGlobals
 export default defineComponent({
   name: 'PageIndex',
   components: {
-    MonacoEditor
+    MonacoEditor, FileDrop
   },
   methods:{
-    render: function() {
-      refs.generatedContentRef.value = rendering.render()
-    },
     onTemplateEditorChange: function(msg : string){
+      refs.templateRef.value = msg
       refs.generatedContentRef.value = rendering.setTemplate(msg).render()
     },
     onJsonEditorChange: function(msg : string){
+      refs.jsonRef.value = msg
       refs.generatedContentRef.value = rendering.setJson(msg).render()
     },
     onCsvEditorChange: function(msg : string){
+      refs.csvDataRef.value = msg
       refs.generatedContentRef.value = rendering.setCsv(!refs.csvDataAutomaticHeader.value, msg).render()
     },
     onCsvHeaderChange: function(){
