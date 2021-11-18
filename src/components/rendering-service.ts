@@ -1,91 +1,77 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-empty-function */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import mustache from 'mustache'
+import { parseCsv, catchMessage } from 'components/helpers'
 
-class RowsData {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public rows: any[] = []
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  constructor() {
-  }
-}
-
-export class RenderingResult {
-  public value: string
-  public error: string
-  constructor(value: string, error: string) {
-    this.value = value
-    this.error = error
-  }
-}
+type CallbackFunction = (msg: string) => void;
 
 export class RenderingService {
+  public onError: CallbackFunction
+  public onSuccess: CallbackFunction
+  private template = ''
   private csvRaw = ''
+  private jsonRaw = ''
   private csvHasHeader = true
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private rowsData: RowsData = new RowsData()
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  private rows: any = {}
+  private json: any = {}
   constructor() {
-
+    this.onError = (m) => { throw m }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    this.onSuccess = (m) => { }
   }
 
-  private parseCsv() {
-    const lines = this.csvRaw.split(/\r?\n/);
-    const headers: string[] = []
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rowsData : any[] = []
-    const firstLineParts = lines[0].split(';')
-    for (let index = 0; index < firstLineParts.length; index++) {
-      if (this.csvHasHeader) {
-        headers.push(firstLineParts[index])
-      }
-      else {
-        headers.push(`c${index}`)
-      }
+  public render() : string {
+    try {
+      const result = mustache.render(this.template, this.json)
+      return result
+    } catch (e) {
+      return catchMessage(e)
     }
-    let index = this.csvHasHeader ? 1 : 0
-    for (index; index < lines.length; index++) {
-      const lineRaw = lines[index]
-      if (lineRaw.trim() == '') continue
-      const lineParts = lineRaw.split(';')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const line : any = {}
-
-      for (let i = 0; i < headers.length; i++) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        line[headers[i]] = lineParts[i]
-      }
-      rowsData.push(line)
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return rowsData
   }
 
-  public generate(template: string, rawData: string, hasHeaders: boolean) : RenderingResult {
-    if (this.csvRaw !== rawData || hasHeaders != this.csvHasHeader || this.rowsData.rows.length == 0) {
-      this.csvHasHeader = hasHeaders
-      this.csvRaw = rawData
-      this.rowsData.rows = this.parseCsv()
-    }
-
-    // if (typeof template !== 'string'){
-    //   debugger
-    //   // return ''
-    // }
+  public setTemplate(template: string) : RenderingService {
+    if (typeof template !== 'string')
+      return this
 
     try {
-      const result = mustache.render(template, this.rowsData)
-      return new RenderingResult(result, '')
+      this.template = template
     } catch (e) {
-      let errorMessage = ''
-      if (typeof e === 'string') {
-        errorMessage = e
-      } else if (e instanceof Error) {
-        errorMessage = e.message
-      }
-      else {
-        errorMessage = 'unknow error'
-        // debugger
-      }
-      return new RenderingResult('', errorMessage)
+      this.onError(catchMessage(e))
     }
+    return this
+  }
+
+  public setJson(json: string) : RenderingService {
+    if (typeof json !== 'string')
+      return this
+
+    try {
+      this.jsonRaw = json
+      this.json = JSON.parse(this.jsonRaw)
+      this.json.rows = this.rows
+    } catch (e) {
+      this.onError(catchMessage(e))
+    }
+    return this
+  }
+
+  public setCsv(hasHeaders: boolean, csv?: string) : RenderingService {
+    if (typeof csv !== 'string' && csv !== undefined)
+      return this
+
+    try {
+      if (csv !== undefined) {
+        this.csvRaw = csv
+      }
+      this.csvHasHeader = hasHeaders
+      this.rows = parseCsv(this.csvRaw, this.csvHasHeader)
+      this.json.rows = this.rows
+    } catch (e) {
+      this.onError(catchMessage(e))
+    }
+    return this
   }
 }

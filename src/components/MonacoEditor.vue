@@ -1,4 +1,3 @@
-
 <script>
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
@@ -18,10 +17,10 @@ export { monaco };
 export default {
   name: 'MonacoEditor',
   props: {
-    diffEditor: { type: Boolean, default: false },      //是否使用diff模式
+    diffEditor: { type: Boolean, default: false },
     width: {type: [String, Number], default: '100%'},
     height: {type: [String, Number], default: '100%'},
-    original: String,       //只有在diff模式下有效
+    original: String,
     value: String,
     language: {type: String, default: 'javascript'},
     theme: {type: String, default: 'vs'},
@@ -50,7 +49,7 @@ export default {
 
     language() {
       if(!this.editor) return;
-      if(this.diffEditor){      //diff模式下更新language
+      if(this.diffEditor){
         const { original, modified } = this.editor.getModel();
         monaco.editor.setModelLanguage(original, this.language);
         monaco.editor.setModelLanguage(modified, this.language);
@@ -106,15 +105,16 @@ export default {
   methods: {
     initMonaco() {
       const { value, language, theme, options } = this;
-      Object.assign(options, this._editorBeforeMount());      //编辑器初始化前
-      this.editor = monaco.editor[this.diffEditor ? 'createDiffEditor' : 'create'](this.$el, {
+      Object.assign(options, this._editorBeforeMount());
+      const factory = this.diffEditor ? monaco.editor.createDiffEditor : monaco.editor.create
+      this.editor = factory(this.$el, {
         value: value,
         language: language,
         theme: theme,
         ...options
       });
       this.diffEditor && this._setModel(this.value, this.original);
-      this._editorMounted(this.editor);      //编辑器初始化后
+      this._editorMounted(this.editor);
     },
 
     _getEditor() {
@@ -122,7 +122,7 @@ export default {
       return this.diffEditor ? this.editor.modifiedEditor : this.editor;
     },
 
-    _setModel(value, original) {     //diff模式下设置model
+    _setModel(value, original) {
       const { language } = this;
       const originalModel = monaco.editor.createModel(original, language);
       const modifiedModel = monaco.editor.createModel(value, language);
